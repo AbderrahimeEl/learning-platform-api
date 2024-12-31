@@ -3,17 +3,27 @@
 // Question : Pourquoi séparer la logique métier des routes ?
 // Réponse :
 
-const { ObjectId } = require('mongodb');
-const db = require('../config/db');
-const mongoService = require('../services/mongoService');
-const redisService = require('../services/redisService');
+const { ObjectId } = require("mongodb");
+const db = require("../config/db");
+const mongoService = require("../services/mongoService");
+const redisService = require("../services/redisService");
 
 async function createCourse(req, res) {
-  // TODO: Implémenter la création d'un cours
-  // Utiliser les services pour la logique réutilisable
+  res.send("createCourse");
 }
 
-// Export des contrôleurs
+async function getCourse(req, res) {
+  // Logique pour obtenir un cours par ID
+  res.send("getCourse by ID");
+}
+
+async function getCourses(req, res) {
+  // Logique pour obtenir les statistiques des cours
+  res.send("getCourses");
+}
+
 module.exports = {
-  // TODO: Exporter les fonctions du contrôleur
+  createCourse,
+  getCourse,
+  getCourses,
 };
