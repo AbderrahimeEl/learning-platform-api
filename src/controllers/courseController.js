@@ -2,28 +2,44 @@
 // Réponse:
 // Question : Pourquoi séparer la logique métier des routes ?
 // Réponse :
-
-const { ObjectId } = require("mongodb");
-const db = require("../config/db");
-const mongoService = require("../services/mongoService");
-const redisService = require("../services/redisService");
-
-async function createCourse(req, res) {
-  res.send("createCourse");
-}
+const mongoService = require('../services/mongoService');
 
 async function getCourse(req, res) {
   // Logique pour obtenir un cours par ID
-  res.send("getCourse by ID");
+  try {
+    const course = await mongoService.findOneById('courses', req.params.id);
+    if (!course) {
+      return res.status(404).send('Course not found');
+    }
+    res.json(course);
+  } catch (error) {
+    res.status(500).send('Error retrieving course: ' + error.message);
+  }
 }
 
 async function getCourses(req, res) {
-  // Logique pour obtenir les statistiques des cours
-  res.send("getCourses");
+  try {
+    const courses = await mongoService.findAll('courses');
+    res.json(courses);
+  } catch (error) {
+    res.status(500).send('Error retrieving courses: ' + error.message);
+  }
 }
 
+async function createCourse(req, res) {
+  // Logique pour créer un cours
+  try {
+    const course = req.body;
+    const result = await mongoService.insertOne('courses', course);
+    res.json(result);
+  } catch (error) {
+    res.status(500).send('Error creating course: ' + error.message);
+  }
+}
+
+
 module.exports = {
-  createCourse,
   getCourse,
   getCourses,
+  createCourse,
 };

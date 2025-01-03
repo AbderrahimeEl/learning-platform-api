@@ -55,7 +55,7 @@ module.exports = {
   // TODO: Exporter les clients et fonctions utiles
   connectMongo,
   connectRedis,
-  db,
+  getDb: () => db,
   redisClient,
   closeConnections
 };

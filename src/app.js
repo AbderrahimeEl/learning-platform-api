@@ -12,7 +12,7 @@ const app = express();
 
 function configureRoutes(app) {
     // Montez les routes ici
-    app.use('/courses', courseRoutes);
+    app.use('/api/courses', courseRoutes);
   }
 
 async function startServer() {
