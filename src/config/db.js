@@ -2,7 +2,6 @@
 // Réponse : 
 // Question : Comment gérer proprement la fermeture des connexions ?
 // Réponse : 
-
 const { MongoClient } = require('mongodb');
 const redis = require('redis');
 const config = require('./env');
@@ -11,34 +10,35 @@ let mongoClient, redisClient, db;
 
 async function connectMongo() {
   try {
-    // TODO: Implémenter la connexion MongoDB
-    mongoClient = await MongoClient.connect(config.mongodb.uri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true
-    });
+    mongoClient = await MongoClient.connect(config.mongodb.uri);
     db = mongoClient.db(config.mongodb.dbName);
     console.log('MongoDB connection successful');
   } catch (err) {
-    // Gérer les erreurs et les retries
     console.error('Error connecting to MongoDB:', err);
+    throw err; 
   }
 }
 
 async function connectRedis() {
-  // TODO: Implémenter la connexion Redis
-  redisClient = redis.createClient(config.redis.uri);
-  
-  redisClient.on('connect', () => {
-    console.log('Redis connection successful');
-  });
-  
-  // Gérer les erreurs et les retries
-  redisClient.on('error', (err) => {
-    console.error('Error connecting to Redis:', err);
-  });
+  try {
+    redisClient = redis.createClient({ url: config.redis.uri });
+
+    redisClient.on('connect', () => {
+      console.log('Redis connection successful');
+    });
+
+    redisClient.on('error', (err) => {
+      console.error('Error connecting to Redis:', err);
+    });
+
+    await redisClient.connect();
+    console.log('Connected to Redis');
+  } catch (error) {
+    console.error('Failed to connect to Redis:', error);
+    throw error; 
+  }
 }
 
-// Fonction de fermeture des connexions
 function closeConnections() {
   if (mongoClient) {
     mongoClient.close();
@@ -50,12 +50,10 @@ function closeConnections() {
   }
 }
 
-// Export des fonctions et clients
 module.exports = {
-  // TODO: Exporter les clients et fonctions utiles
   connectMongo,
   connectRedis,
   getDb: () => db,
-  redisClient,
+  getRedisClient: () => redisClient,
   closeConnections
 };
