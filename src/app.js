@@ -4,6 +4,7 @@
 const express = require("express");
 const config = require("./config/env");
 const courseRoutes = require("./routes/courseRoutes");
+const studentRoutes = require("./routes/studentRoutes");
 const db = require("./config/db");
 
 const app = express();
@@ -11,6 +12,7 @@ const app = express();
 // Montez les routes ici
 function configureRoutes(app) {
   app.use("/api/courses", courseRoutes);
+  app.use("/api/students", studentRoutes);
 }
 
 async function startServer() {
