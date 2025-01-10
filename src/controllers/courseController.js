@@ -91,9 +91,53 @@ async function getCourseStats(req, res) {
   }
 }
 
+async function updateCourse(req, res) {
+  const id = req.params.id;
+    const updates = req.body;
+    try {
+      const updatedCourse = await mongoService.updateOneById(
+        `courses`,
+        id,
+        updates
+      );
+      if (!updatedCourse.matchedCount) {
+        return res.status(404).send("course not found");
+      }
+      await redisService.deleteCachedData(`course:${id}`);
+      res.json({
+        message: "course updated successfully",
+        updatedCourse: updatedCourse,
+      });
+    } catch (error) {
+      console.error("Error updating course:", error);
+      res.status(500).send("Error updating course: " + error.message);
+    }
+}
+
+
+async function deleteCourse(req, res) {
+  const id = req.params.id;
+  try {
+    if (!id) {
+      return res.status(400).send("Invalid course ID");
+    }
+    const result = await mongoService.deleteOneById("courses", id);
+    if (result.deletedCount === 0) {
+      return res.status(404).send("course not found");
+    }
+    await redisService.deleteCachedData(`course:${id}`);
+    res.json({ message: "course deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting course:", error);
+    res.status(500).send("Error deleting course: " + error.message);
+  }
+}
+
 module.exports = {
   getCourse,
   getCourses,
   createCourse,
   getCourseStats,
+  updateCourse,
+  deleteCourse,
 };

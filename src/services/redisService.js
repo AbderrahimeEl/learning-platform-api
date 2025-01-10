@@ -26,8 +26,25 @@ async function getCachedData(key) {
   }
 }
 
+async function deleteCachedData(key) {
+  try {
+    const redisClient = db.getRedisClient();
+    const result = await redisClient.del(key);
+    if (result === 1) {
+      console.log(`Cache key "${key}" deleted successfully`);
+    } else {
+      console.log(`Cache key "${key}" not found`);
+    }
+    return result;
+  } catch (error) {
+    console.error(`Error deleting cache key "${key}":`, error);
+    throw error;
+  }
+}
+
 module.exports = {
-  // TODO: Exporter les fonctions utilitaires
+    // TODO: Exporter les fonctions utilitaires
   cacheData,
   getCachedData,
+  deleteCachedData,
 };
