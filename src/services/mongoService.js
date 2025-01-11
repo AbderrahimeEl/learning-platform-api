@@ -5,20 +5,17 @@ const { connectMongo, getDb } = require('../config/db');
 const { ObjectId } = require('mongodb');
 
 async function findOneById(collectionName, id) {
-  await connectMongo();
   const db = getDb();
   return db.collection(collectionName).findOne({ _id: new ObjectId(id) });
 }
 
 async function findAll(collectionName) {
-  await connectMongo();
   const db = getDb();
   return db.collection(collectionName).find({}).toArray();
 }
 
 async function insertOne(collectionName, document) {
   try {
-    await connectMongo();
     const db = getDb();
     const result = await db.collection(collectionName).insertOne(document);
     return result;
@@ -29,7 +26,6 @@ async function insertOne(collectionName, document) {
 }
 
 async function updateOneById(collectionName, id, updates) {
-  await connectMongo();
   const db = getDb();
   return await db
     .collection(collectionName)
@@ -37,7 +33,6 @@ async function updateOneById(collectionName, id, updates) {
 }
 
 async function deleteOneById(collection, id) {
-  await connectMongo();
   const db = getDb();
   if (!id) {
     throw new Error('Invalid ID');

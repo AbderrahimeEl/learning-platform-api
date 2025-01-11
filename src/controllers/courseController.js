@@ -50,6 +50,7 @@ async function createCourse(req, res) {
   try {
     const course = req.body;
     const result = await mongoService.insertOne('courses', course);
+    await redisService.deleteCachedData("courses");
     res.json(result);
   } catch (error) {
     res.status(500).send('Error creating course: ' + error.message);
@@ -104,6 +105,7 @@ async function updateCourse(req, res) {
         return res.status(404).send("course not found");
       }
       await redisService.deleteCachedData(`course:${id}`);
+      await redisService.deleteCachedData(`courses`);
       res.json({
         message: "course updated successfully",
         updatedCourse: updatedCourse,

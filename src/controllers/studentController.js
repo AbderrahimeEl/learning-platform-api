@@ -5,6 +5,7 @@ async function createStudent(req, res) {
   try {
     const student = req.body;
     const result = await mongoService.insertOne("students", student);
+    await redisService.deleteCachedData(`students`);
     res.json(result);
   } catch (error) {
     res.status(500).send("Error creating student: " + error.message);
@@ -65,6 +66,7 @@ async function updateStudent(req, res) {
       return res.status(404).send("Student not found");
     }
     await redisService.deleteCachedData(`student:${id}`);
+    await redisService.deleteCachedData(`students`);
     res.json({
       message: "Student updated successfully",
       updatedStudent: updatedStudent,
