@@ -95,10 +95,75 @@ async function deleteStudent(req, res) {
   }
 }
 
+async function enrollCourse(req, res) {
+  const studentId = req.params.id;
+  const { courseId } = req.body;
+
+  try {
+    const student = await mongoService.findOneById("students", studentId);
+    if (!student) {
+      return res.status(404).send("Student not found");
+    }
+
+    const courses = Array.isArray(student.courses) ? student.courses : [];
+    const result = await mongoService.updateOneById(
+      "students", 
+      studentId, 
+      { courses: [...courses, courseId] } 
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(404).send("Failed to enroll student in the course");
+    }
+
+    await redisService.deleteCachedData(`student:${studentId}`);
+    res.json({ message: "Student successfully enrolled in course" });
+  } catch (error) {
+    console.error("Error enrolling student in course:", error);
+    res.status(500).send("Error enrolling student: " + error.message);
+  }
+}
+
+
+
+async function getStudentEnrolledCourses(req, res) {
+  const studentId = req.params.id;
+
+  try {
+    const cachedCourses = await redisService.getCachedData(
+      `student:${studentId}:courses`
+    );
+    if (cachedCourses) {
+      console.log("Cache hit");
+      return res.json(cachedCourses);
+    }
+
+    console.log("Cache miss");
+    const student = await mongoService.findOneById("students", studentId);
+    if (!student) {
+      return res.status(404).send("Student not found");
+    }
+
+    const courses = student.courses || [];
+    await redisService.cacheData(`student:${studentId}:courses`, courses, 3600);
+    res.json(courses);
+  } catch (error) {
+    console.error("Error retrieving student's enrolled courses:", error);
+    res.status(500).send(
+      "Error retrieving student's enrolled courses: " + error.message
+    );
+  }
+}
+
+
+
+
 module.exports = {
   createStudent,
   getStudent,
   getStudents,
   updateStudent,
   deleteStudent,
+  enrollCourse,
+  getStudentEnrolledCourses,
 };
