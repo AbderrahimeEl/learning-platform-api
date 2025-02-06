@@ -1,10 +1,5 @@
-// Question: Quelle est la différence entre un contrôleur et une route ?
-// Réponse:
-// Question : Pourquoi séparer la logique métier des routes ?
-// Réponse :
-const mongoService = require('../services/mongoService');
 const redisService = require('../services/redisService');
-const { getDb } = require('../config/db');
+const Course = require('../models/Course');
 
 async function getCourse(req, res) {
   const id = req.params.id;
@@ -17,121 +12,117 @@ async function getCourse(req, res) {
     }
 
     console.log('Cache miss');
-    const course = await mongoService.findOneById('courses', id);
+    const course = await Course.findById(id).populate('lessons');
     if (!course) {
-      return res.status(404).send('Course not found');
+      return res.status(404).json({ error: 'Course not found' });
     }
+
     await redisService.cacheData(`course:${id}`, course, 3600);
     res.json(course);
   } catch (error) {
     console.error('Error retrieving course:', error);
-    res.status(500).send('Error retrieving course: ' + error.message);
+    res.status(500).json({ error: 'Error retrieving course', details: error.message });
   }
 }
 
 async function getCourses(req, res) {
   try {
-    const cachedCourses = await redisService.getCachedData(`courses`);
+    const cachedCourses = await redisService.getCachedData('courses');
     if (cachedCourses) {
       console.log('Cache hit');
       return res.json(cachedCourses);
     }
+
     console.log('Cache miss');
-    const courses = await mongoService.findAll('courses');
-    await redisService.cacheData(`courses`, courses, 3600);
+    const courses = await Course.find({}).populate('lessons');
+    await redisService.cacheData('courses', courses, 3600);
     res.json(courses);
   } catch (error) {
-    res.status(500).send('Error retrieving courses: ' + error.message);
+    res.status(500).json({ error: 'Error retrieving courses', details: error.message });
   }
 }
 
 async function createCourse(req, res) {
-  // Logique pour créer un cours
   try {
-    const course = req.body;
-    const result = await mongoService.insertOne('courses', course);
-    await redisService.deleteCachedData("courses");
-    res.json(result);
+    const courseData = req.body;
+    const newCourse = await Course.create(courseData);
+
+    await redisService.deleteCachedData('courses');
+    res.status(201).json({ message: 'Course created successfully', data: newCourse });
   } catch (error) {
-    res.status(500).send('Error creating course: ' + error.message);
+    res.status(500).json({ error: 'Error creating course', details: error.message });
   }
 }
 
 async function getCourseStats(req, res) {
   try {
-    const cachedStats = await redisService.getCachedData(`courses:stats`);
+    const cachedStats = await redisService.getCachedData('courses:stats');
     if (cachedStats) {
       console.log('Cache hit');
       return res.json(cachedStats);
     }
-    console.log('Cache miss');
-    const db = getDb();
-    const collection = db.collection('courses');
-    const totalCourses = await collection.countDocuments();
-    const durationStats = await collection
-      .aggregate([
-        { $group: { _id: '$duration', total: { $sum: 1 } } },
-        { $sort: { total: -1 } },
-      ])
-      .toArray();
 
-    const courseNames = await collection
-      .find({}, { projection: { name: 1 } })
-      .toArray();
-      const coursesStats = {
-        totalCourses,
-        durationStats,
-        courseNames: courseNames.map((course) => course.name),
-      };
-      // cache it
-      await redisService.cacheData('courses:stats', coursesStats, 3600);
-      res.status(200).json(coursesStats);
+    console.log('Cache miss');
+    const totalCourses = await Course.countDocuments();
+    const durationStats = await Course.aggregate([
+      { $group: { _id: '$duration', total: { $sum: 1 } } },
+      { $sort: { total: -1 } },
+    ]);
+
+    const courseTitles = await Course.find({}, 'title');
+
+    const courseStats = {
+      totalCourses,
+      durationStats,
+      courseTitles: courseTitles.map(course => course.title),
+    };
+
+    await redisService.cacheData('courses:stats', courseStats, 3600);
+    res.status(200).json(courseStats);
   } catch (error) {
     console.error('Failed to get course stats:', error);
-    res.status(500).json({ error: 'Failed to get course stats' });
+    res.status(500).json({ error: 'Failed to get course stats', details: error.message });
   }
 }
 
 async function updateCourse(req, res) {
   const id = req.params.id;
-    const updates = req.body;
-    try {
-      const updatedCourse = await mongoService.updateOneById(
-        `courses`,
-        id,
-        updates
-      );
-      if (!updatedCourse.matchedCount) {
-        return res.status(404).send("course not found");
-      }
-      await redisService.deleteCachedData(`course:${id}`);
-      await redisService.deleteCachedData(`courses`);
-      res.json({
-        message: "course updated successfully",
-        updatedCourse: updatedCourse,
-      });
-    } catch (error) {
-      console.error("Error updating course:", error);
-      res.status(500).send("Error updating course: " + error.message);
-    }
-}
+  const updates = req.body;
 
+  try {
+    const updatedCourse = await Course.findByIdAndUpdate(id, updates, {
+      new: true,
+      runValidators: true,
+    }).populate('lessons');
+
+    if (!updatedCourse) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
+
+    await redisService.deleteCachedData(`course:${id}`);
+    await redisService.deleteCachedData('courses');
+    res.json({ message: 'Course updated successfully', data: updatedCourse });
+  } catch (error) {
+    console.error('Error updating course:', error);
+    res.status(500).json({ error: 'Error updating course', details: error.message });
+  }
+}
 
 async function deleteCourse(req, res) {
   const id = req.params.id;
+
   try {
-    if (!id) {
-      return res.status(400).send("Invalid course ID");
+    const result = await Course.findByIdAndDelete(id);
+    if (!result) {
+      return res.status(404).json({ error: 'Course not found' });
     }
-    const result = await mongoService.deleteOneById("courses", id);
-    if (result.deletedCount === 0) {
-      return res.status(404).send("course not found");
-    }
+
     await redisService.deleteCachedData(`course:${id}`);
-    res.json({ message: "course deleted successfully" });
+    await redisService.deleteCachedData('courses');
+    res.json({ message: 'Course deleted successfully' });
   } catch (error) {
-    console.error("Error deleting course:", error);
-    res.status(500).send("Error deleting course: " + error.message);
+    console.error('Error deleting course:', error);
+    res.status(500).json({ error: 'Error deleting course', details: error.message });
   }
 }
 
