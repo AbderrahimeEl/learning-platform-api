@@ -1,8 +1,4 @@
-// Question : Pourquoi créer un module séparé pour les connexions aux bases de données ?
-// Réponse : 
-// Question : Comment gérer proprement la fermeture des connexions ?
-// Réponse : 
-const { MongoClient } = require('mongodb');
+const mongoose = require('mongoose');
 const redis = require('redis');
 const config = require('./env');
 
@@ -10,12 +6,15 @@ let mongoClient, redisClient, db;
 
 async function connectMongo() {
   try {
-    mongoClient = await MongoClient.connect(config.mongodb.uri);
-    db = mongoClient.db(config.mongodb.dbName);
-    console.log('MongoDB connection successful');
+    await mongoose.connect(config.mongodb.uri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+
+    console.log('MongoDB connected successfully using Mongoose');
   } catch (err) {
     console.error('Error connecting to MongoDB:', err);
-    throw err; 
+    throw err;
   }
 }
 
@@ -32,7 +31,6 @@ async function connectRedis() {
     });
 
     await redisClient.connect();
-    console.log('Connected to Redis');
   } catch (error) {
     console.error('Failed to connect to Redis:', error);
     throw error; 
@@ -40,20 +38,14 @@ async function connectRedis() {
 }
 
 function closeConnections() {
-  if (mongoClient) {
-    mongoClient.close();
+  mongoose.connection.close(() => {
     console.log('MongoDB connection closed');
-  }
-  if (redisClient) {
-    redisClient.quit();
-    console.log('Redis connection closed');
-  }
-}
+  });
+} 
 
 module.exports = {
   connectMongo,
   connectRedis,
-  getDb: () => db,
   getRedisClient: () => redisClient,
   closeConnections
 };
