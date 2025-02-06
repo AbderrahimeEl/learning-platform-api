@@ -28,5 +28,15 @@ router.delete(
   adminMiddleware,
   userController.deleteUser
 );
+router.post(
+  "/:id/enroll",
+  authMiddleware.authenticateUser,
+  userController.enrollInCourse
+);
+router.get(
+  "/:id/courses",
+  authMiddleware.authenticateUser,
+  userController.getUserEnrolledCourses
+);
 
 module.exports = router;
