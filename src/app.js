@@ -2,14 +2,15 @@ const express = require("express");
 const config = require("./config/env");
 const courseRoutes = require("./routes/courseRoutes");
 const authRoutes = require("./routes/authRoutes");
+const lessonRoutes = require('./routes/lessonRoutes');
 const userRoutes = require('./routes/userRoutes');
 const db = require("./config/db");
 
 const app = express();
 
-// Montez les routes ici
 function configureRoutes(app) {
   app.use("/api/courses", courseRoutes);
+  app.use("/api/courses", lessonRoutes);
   app.use('/api/auth', authRoutes);
   app.use('/api/users', userRoutes);
 }
