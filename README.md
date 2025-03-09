@@ -1,7 +1,7 @@
 # Projet de fin de module NoSQL
 
-Pour ce projet, vous allez créer une petite API qui va servir de backend à une plateforme d'apprentissage en ligne. J'ai préparé la structure du projet avec une organisation professionnelle du code, comme vous pouvez le constater dans ce dépôt Github.
-
+API backend pour une plateforme d’apprentissage en ligne, incluant la gestion des cours, étudiants
+et formateurs, ainsi que l’inscription, les mises à jour et les statistiques. 
 
 ## Instructions de configuration
 
