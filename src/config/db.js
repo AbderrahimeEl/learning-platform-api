@@ -6,11 +6,7 @@ let mongoClient, redisClient, db;
 
 async function connectMongo() {
   try {
-    await mongoose.connect(config.mongodb.uri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-
+    await mongoose.connect(config.mongodb.uri);
     console.log('MongoDB connected successfully using Mongoose');
   } catch (err) {
     console.error('Error connecting to MongoDB:', err);

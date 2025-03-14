@@ -48,9 +48,9 @@ async function startServer() {
     configureRoutes(app);
 
     const PORT = config.port || 3000;
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on port ${PORT}`);
-    });
+    });    
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
