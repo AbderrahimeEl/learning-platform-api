@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   redis:
@@ -7,7 +6,7 @@ services:
     ports:
       - "6379:6379"
     networks:
-      - mynetwork
+      - net
     restart: always
 
   mongo:
@@ -18,9 +17,31 @@ services:
     environment:
       - MONGO_INITDB_DATABASE=${MONGODB_DB_NAME}
     networks:
-      - mynetwork
+      - net
+    restart: always
+    volumes:
+      - mongo-data:/data/db
+  app:
+    build: .
+    container_name: learning-p-api
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/${MONGODB_DB_NAME}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - mongo
+      - redis
+    networks:
+      - net
     restart: always
 
+volumes:
+    mongo-data:
+      driver: local
+
+
 networks:
-  mynetwork:
+  net:
     driver: bridge
